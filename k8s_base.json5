@@ -1,0 +1,59 @@
+// USAGE with unpatched packer: cfgt -i myfile.json5 | packer build -
+// USAGE with patched packer: packer build myfile.json5
+{
+    variables: {
+        // Environment variables pulled from `triton env` or `triton env $(PROFILE_NAME)`
+        triton_account: "{{ env `SDC_ACCOUNT` }}",
+        triton_key_id: "{{ env `SDC_KEY_ID` }}",
+        triton_key_material_path: "{{ env `SDC_KEY_PATH` }}",
+        triton_url: "{{ env `SDC_URL` }}",
+        image_name: "b-ubuntu-16.04",
+        image_version: "1.0.0",
+    },
+
+    builders: [
+        {
+            type: "triton",
+
+            triton_url: "{{ user `triton_url` }}",
+            triton_account: "{{ user `triton_account` }}",
+            triton_key_id: "{{ user `triton_key_id` }}",
+            triton_key_material: "{{ user `triton_key_material_path` }}",
+
+            source_machine_name: "b-ubuntu-build",
+
+            // Value from the NAME column output from `make packages`
+            source_machine_package: "79ddc917-7076-6b57-b53c-94edb63210e1",
+
+            // Value from the ID column output from `make images-freebsd`
+            source_machine_image: "e44aebdd-d745-4b04-8ee9-8bc31765b959",
+
+            // Value from the ID column output from `make networks`
+            source_machine_networks: [
+                "05909d29-7c4f-4c04-9dab-dad2068de161",
+            ],
+
+            ssh_username: "ubuntu",
+            ssh_private_key_file: "{{ user `triton_key_material_path` }}",
+
+            image_name: "{{ user `image_name` }}",
+            image_version: "{{ user `image_version` }}",
+        },
+    ],
+    provisioners: [
+        {
+          type: "shell",
+          environment_vars: [
+            "K8S_VER=1.10.2",
+            "K8S_SHA256=1ff377ad005a5548f872f7534328dcc332c683e527f432708eddcc549a6ab880",
+            "CP_VER=3.8.0",
+            "CONSUL_VER=1.1.0"
+          ],
+          scripts: [
+            "./k8s_bins.sh",
+            "./cp_install.sh",
+            "./consul_install.sh"
+          ],
+        }
+    ]
+}
