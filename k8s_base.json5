@@ -41,8 +41,9 @@
         },
     ],
     provisioners: [
-        {
+          {
           type: "shell",
+          execute_command: "sudo -S env {{ .Vars }} {{ .Path }}",
           environment_vars: [
             "K8S_VER=1.10.2",
             "K8S_SHA256=1ff377ad005a5548f872f7534328dcc332c683e527f432708eddcc549a6ab880",
@@ -54,6 +55,11 @@
             "./cp_install.sh",
             "./consul_install.sh"
           ],
+        },
+        {
+          type: "file",
+          source: "./containerpilot.service",
+          destination: "/etc/systemd/system/containerpilot.service"
         }
     ]
 }
