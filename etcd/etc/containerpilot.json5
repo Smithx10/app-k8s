@@ -1,0 +1,74 @@
+{
+  consul: '{{ if .CONSUL_AGENT }}localhost{{ else }}{{ .CONSUL | default "consul"}}{{ end }}:8500',
+  logging: {
+    level: '{{ .LOG_LEVEL | default "INFO" }}'
+  },
+  jobs: [
+    {{ if .ETCD_BOOTSTRAP }}{
+      name: '{{ .SERVICE_NAME | default "etcd-bootstrap" }}',
+      exec: '/usr/local/bin/etcd-manage bootstrap',
+      port: 4001,
+      health: {
+        exec: '/usr/local/bin/etcd-manage health',
+        interval: 5,
+        ttl: 10
+      },
+      when: {
+        source: "consul-agent",
+        once: "healthy"
+      },
+      consul: {
+        deregisterCriticalServiceAfter: "5m",
+      }
+    },
+    {
+      name: 'set-discovery',
+      exec: '/usr/local/bin/etcd-manage setDiscovery',
+      when: {
+        source: "etcd-bootstrap",
+        once: "healthy"
+      }
+    },
+     {{ else }}{
+      name: '{{ .SERVICE_NAME | default "etcd" }}',
+      exec: '/usr/local/bin/etcd-manage start',
+      port: 2379,
+      health: {
+        exec: '/usr/local/bin/etcd-manage health',
+        interval: 5,
+        ttl: 10
+      },
+      when: {
+        source: "consul-agent",
+        once: "healthy"
+      },
+      consul: {
+        deregisterCriticalServiceAfter: "5m",
+      }
+    },{{ end }}
+    {{ if .CONSUL_AGENT }}{
+      name: "consul-agent",
+      restarts: "unlimited",
+      exec: [
+        "/usr/local/bin/consul", "agent",
+        "-bind={{`{{ GetInterfaceIP \"eth0\" }}`}}",
+        "-data-dir=/data",
+        "-config-dir=/config"
+      ],
+      health: {
+        exec: 'consul join {{ .CONSUL | default "consul"}}',
+        interval: 5,
+        ttl: 10
+      },
+      stopTimeout: "5s"
+    },
+    {
+      name: "leave-consul",
+      exec: "consul leave",
+      when: {
+        source: "consul-agent",
+        once: "stopping"
+      }
+    }{{ end }}
+  ]
+}
