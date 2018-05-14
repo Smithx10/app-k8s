@@ -55,9 +55,8 @@
     },
     {
       type: "shell",
-      execute_command: "sudo -S env {{ .Vars }} {{ .Path }}",
       inline: [
-        "uname -a" 
+        "sudo mv /tmp/containerpilot.service /etc/systemd/system/containerpilot.service" 
       ]
     }
   ]
