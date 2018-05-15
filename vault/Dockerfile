@@ -48,8 +48,8 @@ RUN export CP_VER=3.8.0 \
     && rm /tmp/${CP_PKG}
 
 # configuration files and bootstrap scripts
-COPY ./etc/containerpilot.json5 /etc/
-COPY ./etc/vault-no-tls.hcl /etc/
-COPY ./bin/* /usr/local/bin/
+COPY ./vault/etc/containerpilot.json5 /etc/
+COPY ./vault/etc/vault-no-tls.hcl /etc/
+COPY ./vault/bin/* /usr/local/bin/
 
 ENV SHELL /bin/bash

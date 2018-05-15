@@ -35,9 +35,9 @@ RUN export CP_VER=3.8.0 \
     && rm /tmp/${CP_PKG}
 
 # configuration files and bootstrap scripts
-COPY etc/containerpilot.json5 etc/
-COPY etc/consul.hcl etc/consul/
-COPY bin/* /usr/local/bin/
+COPY ./consul/etc/containerpilot.json5 /etc/
+COPY ./consul/etc/consul.hcl /etc/consul/
+COPY ./consul/bin/* /usr/local/bin/
 
 # We don't need to expose these ports in order for other containers on Triton
 # to reach this container in the default networking environment, but if we

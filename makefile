@@ -19,6 +19,7 @@ help:
 # ------------------------------------------------
 # Container builds
 
+local-build: local-etcd-build local-k8s-api-build local-consul-build local-vault-build
 ## Builds the application container image locally
 local-etcd-build:
 	docker build -f ./etcd/Dockerfile -t=$(image):latest .
@@ -28,6 +29,9 @@ local-k8s-api-build:
 
 local-consul-build:
 	docker build -f ./consul/Dockerfile -t=$(namespace)/consul:latest .
+
+local-vault-build:
+	docker build -f ./vault/Dockerfile -t=$(namespace)/vault:latest .
 
 ## This Process would be taken care of in CI to make sure the application is cleanly deployed.  For now, I'm just going to show operability.
 
