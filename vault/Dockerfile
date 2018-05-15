@@ -10,6 +10,26 @@ RUN apk --no-cache \
 
 ENV CONTAINERPILOT=/etc/containerpilot.json5
 
+# Add jq
+RUN export JQ_VER=1.5 \
+    && export JQ_SHA256=c6b3a7d7d3e7b70c6f51b706a3b90bd01833846c54d32ca32f0027f00226ff6d \ 
+    && export JQ_URL=https://github.com/stedolan/jq/releases/download/jq-${JQ_VER}/jq-linux64 \
+    && curl -Ls --fail -o /usr/local/bin/jq ${JQ_URL} \
+    && echo "${JQ_SHA256}  /usr/local/bin/jq" | sha256sum -c \
+    && chmod +x /usr/local/bin/jq
+
+# Add ran http web server
+RUN export RAN_VER=0.1.3 \
+    && export RAN_PKG=ran_linux_amd64.zip \
+    && export RAN_URL=https://github.com/m3ng9i/ran/releases/download/v${RAN_VER}/${RAN_PKG} \
+    && export RAN_SHA256=2e7cdbadf495e79993768bf37f51f8f704ae66e5cbcb96dd7a80996fdebcbbdf \
+    && curl -Ls --fail -o /tmp/${RAN_PKG} ${RAN_URL} \
+    && echo "${RAN_SHA256}  /tmp/${RAN_PKG}" | sha256sum -c \
+    && unzip /tmp/${RAN_PKG} -d /usr/local/bin \
+    && mv /usr/local/bin/ran_linux_amd64 /usr/local/bin/ran \
+    && mkdir /ran \
+    && rm /tmp/${RAN_PKG}
+
 # The Vault binary
 # Add Vault and set its configuration
 RUN export VAULT_VER=0.10.1 \

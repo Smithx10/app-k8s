@@ -34,11 +34,28 @@ services:
       - consul:consul
     command: >-
       /usr/local/bin/containerpilot
+
+  vault-init:
+    image: smithx10/vault:latest
+    mem_limit: 128m
+    ports:
+      - 8080:8080
+      - 8081:8081
+    environment:
+      - VAULT_INIT=1
+      - CONSUL=consul
+      - CONSUL_AGENT=1
+    network_mode: bridge
+    links:
+      - consul:consul
+    command: >-
+      /usr/local/bin/containerpilot
+
   vault:
     image: smithx10/vault:latest
     mem_limit: 128m
     ports:
-      - 8200
+      - 8200:8200
     environment:
       - VAULT_ADDR=http://127.0.0.1:8200
       - CONSUL=consul

@@ -8,14 +8,6 @@ preStart() {
 start() {
   _log 'starting vault server'
   /usr/local/bin/vault server -config /etc/vault-no-tls.hcl
-  
-  initialized=$(curl -sl -x get --fail http://${consul}:8500/v1/kv/vaultInitialized)
-  
-  if [[ -z ${initialized} ]]; then
-    vaultInit
-  else 
-    _log 'Vault has already been initilized'
-  fi
 }
 
 health() {
@@ -40,21 +32,43 @@ EOF
 }
 
 exportPgpKey() {
-  gpg --export 'Example User <example@example.com>' | base64 > ./example.asc
+  gpg --export 'Example User <example@example.com>' | base64 > /ran/my-pgp-public-key.asc
   PGP_KEYFILE="example.asc"
-  echo '* Created a PGP key and exported the public key to ./example.asc'
+  echo '* Created a PGP key and exported the public key to example.asc'
 }
 
 vaultInit() {
-  # Create a Key
-  createPgpKey
+  # Wait for vault to come up healthy
+  while [[ -z ${vaultIP} ]]; do
+    vaultIP=$(curl ${CONSUL}:8500/v1/catalog/service/vault-node | jq -r '.[]  | select(.ServiceName == "vault-node") | .ServiceAddress')
+    sleep 3
+    _log "vaultIP is: ${vaultIP}"
+  done    
+  
+  initialized=$(curl -sL -X GET --fail http://${CONSUL}:8500/v1/kv/vaultInitialized)
+  if [[ -z ${initialized} ]]; then
+    # Create a Key
+      createPgpKey
+    # Export the Key
+      exportPgpKey
+    # Init the Vault
+      vault operator init -address=http://${vaultIP}:8200 -key-shares=1 -key-threshold=1 -pgp-keys=/ran/my-pgp-public-key.asc > /ran/my-vault_keys
+    # Put in check that we've already init'd vault.
+      curl -sL -x PUT --fail -d 'true' http://${CONSUL}:8500/v1/kv/vaultInitialized
+    
+    # Move gpg private keys to be consumed by the users
+      mv /root/.gnupg/private-keys-v1.d/* /ran/my-pgp-private-key.key
+    # Run http server to allow download of pgp key and vault keys.
+      /usr/local/bin/ran -make-cert -cert=/ran/ran-cert.pem -key=/ran/ran-key.pem
+      /usr/local/bin/ran -cert=/ran/ran-cert.pem -key=/ran/ran-key.pem -tls-policy=redirect -port=8080 -tls-port=8081 -listdir=true -root=/ran
 
-  # Export the Key
-  exportPgpKey
+  else 
+    _log 'Vault has already been initilized'
+  fi
+}
 
-  # Init the Vault
-  vault operator init -key-shares=1 -key-threshold=1 -pgp-keys=example.asc
-  curl -sl -x put --fail -d 'true' http://${consul}:8500/v1/kv/vaultInitialized
+ranHealth () {
+  curl -sLf -o /dev/null http://localhost:8080
 }
 # ---------------------------------------------------
 # parse arguments

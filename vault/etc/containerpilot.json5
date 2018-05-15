@@ -15,10 +15,27 @@
         deregisterCriticalServiceAfter: "5m",
       }
     },
+    {{ if .VAULT_INIT }}{
+      name: "{{ .SERVICE_NAME | default "vault-init" }}",
+      exec: "/usr/local/bin/vault-manage vaultInit",
+      port: 8080,
+      health: {
+        exec: "/usr/local/bin/vault-manage ranHealth",
+        interval: 5,
+        ttl: 10
+      },
+      when: {
+        source: "consul-agent",
+        once: "healthy"
+      },
+      consul: {
+        deregisterCriticalServiceAfter: "5m",
+      }
+    }{{ else }}
     {
-      name: "{{ .SERVICE_NAME | default "vault" }}",
+      name: "{{ .SERVICE_NAME | default "vault-node" }}",
       exec: "/usr/local/bin/vault-manage start",
-      port: 2379,
+      port: 8200,
       health: {
         exec: "/usr/local/bin/vault-manage health",
         interval: 5,
@@ -31,7 +48,8 @@
       consul: {
         deregisterCriticalServiceAfter: "5m",
       }
-    },
+    }{{ end }},
+
     {{ if .CONSUL_AGENT }}{
       name: "consul-agent",
       restarts: "unlimited",
