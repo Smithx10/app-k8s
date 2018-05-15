@@ -55,7 +55,7 @@ services:
     image: smithx10/vault:latest
     mem_limit: 128m
     ports:
-      - 8200:8200
+      - 8200
     environment:
       - VAULT_ADDR=http://127.0.0.1:8200
       - CONSUL=consul

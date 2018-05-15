@@ -48,11 +48,11 @@ vaultInit() {
   initialized=$(curl -sL -X GET --fail http://${CONSUL}:8500/v1/kv/vaultInitialized)
   if [[ -z ${initialized} ]]; then
     # Create a Key
-      createPgpKey
+      #createPgpKey
     # Export the Key
-      exportPgpKey
+      #exportPgpKey
     # Init the Vault
-      vault operator init -address=http://${vaultIP}:8200 -key-shares=1 -key-threshold=1 -pgp-keys=/ran/my-pgp-public-key.asc > /ran/my-vault_keys
+      vault operator init -address=http://${vaultIP}:8200  > /ran/my-vault_keys
     # Put in check that we've already init'd vault.
       curl -sL -x PUT --fail -d 'true' http://${CONSUL}:8500/v1/kv/vaultInitialized
     
