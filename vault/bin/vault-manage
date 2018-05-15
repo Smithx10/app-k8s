@@ -1,0 +1,84 @@
+#!/bin/bash
+set -eo pipefail
+
+preStart() {
+  sed -i "s/\$\$IP_ADDRESS/${CONSUL}/" /etc/vault-no-tls.hcl
+}
+
+start() {
+  _log 'starting vault server'
+  /usr/local/bin/vault server -config /etc/vault-no-tls.hcl
+  
+  initialized=$(curl -sl -x get --fail http://${consul}:8500/v1/kv/vaultInitialized)
+  
+  if [[ -z ${initialized} ]]; then
+    vaultInit
+  else 
+    _log 'Vault has already been initilized'
+  fi
+}
+
+health() {
+  /usr/local/bin/vault status
+}
+
+_log() {
+    echo "    $(date -u '+%Y-%m-%d %H:%M:%S') containerpilot: $@"
+}
+
+createPgpKey() {
+  echo '* Creating PGP key...'
+  gpg -q --batch --gen-key <<EOF
+Key-Type: RSA
+Key-Length: 2048
+Name-Real: Example User
+Name-Email: example@example.com
+Passphrase: example
+Expire-Date: 0
+%commit
+EOF
+}
+
+exportPgpKey() {
+  gpg --export 'Example User <example@example.com>' | base64 > ./example.asc
+  PGP_KEYFILE="example.asc"
+  echo '* Created a PGP key and exported the public key to ./example.asc'
+}
+
+vaultInit() {
+  # Create a Key
+  createPgpKey
+
+  # Export the Key
+  exportPgpKey
+
+  # Init the Vault
+  vault operator init -key-shares=1 -key-threshold=1 -pgp-keys=example.asc
+  curl -sl -x put --fail -d 'true' http://${consul}:8500/v1/kv/vaultInitialized
+}
+# ---------------------------------------------------
+# parse arguments
+
+# Get function list
+funcs=($(declare -F -p | cut -d " " -f 3))
+
+until
+    if [ ! -z "$1" ]; then
+        # check if the first arg is a function in this file, or use a default
+        if [[ " ${funcs[@]} " =~ " $1 " ]]; then
+            cmd=$1
+            shift 1
+        fi
+
+        $cmd "$@"
+        if [ $? == 127 ]; then
+            help
+        fi
+
+        exit
+    else
+        health
+    fi
+do
+    echo
+done

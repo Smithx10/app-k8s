@@ -12,18 +12,22 @@ RUN apk --no-cache \
         jq \
         util-linux
 
-# Add EtcD and set its configuration
+# Add cfssl
+RUN export CFSSL_VER=1.2 \
+  && export CFSSL_PKG=cfssl_linux-amd64 \
+  && export CFSSL_SHA256=$(curl -L https://pkg.cfssl.org/R${CFSSL_VER}/SHA256SUMS | grep ${CFSSL_PKG} | awk '{print $1}') \
+  && export CFSSL_URL=https://pkg.cfssl.org/R${CFSSL_VER}/${CFSSL_PKG} \
+  && curl -Ls --fail -o /tmp/${CFSSL_PKG} ${CFSSL_URL} \
+  && echo "${CFSSL_SHA256}  /tmp/${CFSSL_PKG}" | sha256sum -c \
+  && mv /tmp/${CFSSL_PKG} /usr/local/bin/cfssl
 
-RUN export ETCD_VER=3.3.5 \
-    && export ETCD_PKG=etcd-v${ETCD_VER}-linux-amd64.tar.gz \
-    && export ETCD_SHA256=9eed277af462085b7354b9c0b3fbb2453b62bb116361d2025f6c150eae6e77c8 \
-    && export ETCD_URL=https://github.com/coreos/etcd/releases/download/v${ETCD_VER}/${ETCD_PKG} \
-    && curl -Ls --fail -o /tmp/${ETCD_PKG} ${ETCD_URL} \
-    && echo "${ETCD_SHA256}  /tmp/${ETCD_PKG}" | sha256sum -c \
-    && tar zxf /tmp/${ETCD_PKG} -C /usr/local/bin \
-    && mv /usr/local/bin/etcd-v3.3.5-linux-amd64/etcdctl /usr/local/bin/etcdctl \
-    && mv /usr/local/bin/etcd-v3.3.5-linux-amd64/etcd /usr/local/bin/etcd \
-    && rm /tmp/${ETCD_PKG}
+RUN export CFSSJS_VER=1.2 \
+  && export CFSSJS_PKG=cfssljson_linux-amd64 \
+  && export CFSSJS_SHA256=$(curl -L https://pkg.cfssl.org/R${CFSSJS_VER}/SHA256SUMS | grep ${CFSSJS_PKG} | awk '{print $1}') \
+  && export CFSSJS_URL=https://pkg.cfssl.org/R${CFSSJS_VER}/${CFSSJS_PKG} \
+  && curl -Ls --fail -o /tmp/${CFSSJS_PKG} ${CFSSJS_URL} \
+  && echo "${CFSSJS_SHA256}  /tmp/${CFSSJS_PKG}" | sha256sum -c \
+  && mv /tmp/${CFSSJS_PKG} /usr/local/bin/cfssljson
 
 # Add ContainerPilot and set its configuration
 RUN export CP_VER=3.8.0 \
@@ -53,9 +57,5 @@ RUN export CONSUL_VER=1.1.0 \
 #COPY etc/etcd.json etc/etcd/
 COPY ./etcd/bin/* /usr/local/bin/
 COPY ./etcd/etc/containerpilot.json5 /etc/containerpilot.json5
-
-
-
-EXPOSE 2379 2380 4001
 
 ENV SHELL /bin/bash

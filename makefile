@@ -20,11 +20,14 @@ help:
 # Container builds
 
 ## Builds the application container image locally
-local-build:
-	docker build -f Dockerfile -t=$(image):latest .
+local-etcd-build:
+	docker build -f ./etcd/Dockerfile -t=$(image):latest .
 
-triton-build: 
-	triton-docker build -f fibo/Dockerfile -t=$(image):latest .
+local-k8s-api-build:
+	docker build -f ./api/Dockerfile -t=$(namespace)/api:latest .
+
+local-consul-build:
+	docker build -f ./consul/Dockerfile -t=$(namespace)/consul:latest .
 
 ## This Process would be taken care of in CI to make sure the application is cleanly deployed.  For now, I'm just going to show operability.
 
@@ -36,32 +39,31 @@ triton-build:
 # ------------------------------------------------
 # Up / Down / Clean Locally
 local-up:
-	docker-compose -f local-compose.yml -p etcd up -d
+	docker-compose -f examples/compose/docker-compose.yml -p k8s up -d
 
 local-down:
-	docker-compose -f local-compose.yml -p etcd down
+	docker-compose -f examples/compose/docker-compose.yml -p k8s down
 
-local-scale-up:
-	docker-compose -f local-compose.yml -p etcd scale etcd=3
+local-scale-etcd-up:
+	docker-compose -f examples/compose/docker-compose.yml -p k8s scale etcd=3
 
-local-scale-down:
-	docker-compose -f local-compose.yml -p etcd scale etcd=1
+local-scale-etcd-down:
+	docker-compose -f examples/compose/docker-compose.yml -p k8s scale etcd=1
 
 local-remove-bootstrap:
-	docker-compose -f local-compose.yml -p etcd scale etcd-bootstrap=0
+	docker-compose -f examples/compose/docker-compose.yml -p k8s scale etcd-bootstrap=0
+
+local-scale-vault-up:
+	docker-compose -f examples/compose/docker-compose.yml -p k8s scale vault=3
+
+local-scale-vault-down:
+	docker-compose -f examples/compose/docker-compose.yml -p k8s scale vault=1
 
 
 # ------------------------------------------------
-# Up / Down / Clean on Triton
-triton-up:
 
-triton-down:
-
-int-tests:
-
-
-
-
+create-pgp-key:
+	./vault/bin/create-key.sh
 
 ## Print environment for build debugging
 debug:

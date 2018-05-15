@@ -1,0 +1,68 @@
+#!/bin/bash
+set -eo pipefail
+
+
+health() {
+}
+
+preStart() {
+  export API_IP=$(hostname -i)
+  _log "Started kube-apiserver"
+
+  export 
+}
+
+start() {
+  preStart 
+  
+  exec /usr/local/bin/kube-apiserver \
+    --admission-control=NamespaceLifecycle,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota \
+    --advertise-address=${API_IP} \
+    --allow-privileged=true \
+    --apiserver-count=3 \
+    --authorization-mode=ABAC \
+    --authorization-policy-file=/var/lib/kubernetes/authorization-policy.jsonl \
+    --bind-address=0.0.0.0 \
+    --enable-swagger-ui=true \
+    --etcd-servers=${etcd_servers} \
+    --insecure-bind-address=0.0.0.0 \
+    --kubelet-certificate-authority=/var/lib/kubernetes/ca.pem \
+    --service-account-key-file=/var/lib/kubernetes/kubernetes-key.pem \
+    --service-cluster-ip-range=10.32.0.0/24 \
+    --service-node-port-range=30000-32767 \
+    --tls-cert-file=/var/lib/kubernetes/kubernetes.pem \
+    --tls-private-key-file=/var/lib/kubernetes/kubernetes-key.pem \
+    --token-auth-file=/var/lib/kubernetes/token.csv \
+    --v=2
+}
+
+_log() {
+  echo "    $(date -u '+%Y-%m-%d %H:%M:%S') autopilot: $@"
+}
+
+# ---------------------------------------------------
+# parse arguments
+
+# Get function list
+funcs=($(declare -F -p | cut -d " " -f 3))
+
+until
+    if [ ! -z "$1" ]; then
+        # check if the first arg is a function in this file, or use a default
+        if [[ " ${funcs[@]} " =~ " $1 " ]]; then
+            cmd=$1
+            shift 1
+        fi
+
+        $cmd "$@"
+        if [ $? == 127 ]; then
+            help
+        fi
+
+        exit
+    else
+        health
+    fi
+do
+    echo
+done

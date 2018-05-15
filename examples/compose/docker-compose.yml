@@ -16,7 +16,7 @@ services:
       - CONSUL_AGENT=1
     command: >-
       /usr/local/bin/containerpilot
-
+  
   etcd-bootstrap:
     image: smithx10/etcd:latest
     mem_limit: 128m
@@ -34,9 +34,23 @@ services:
       - consul:consul
     command: >-
       /usr/local/bin/containerpilot
-
+  vault:
+    image: smithx10/vault:latest
+    mem_limit: 128m
+    ports:
+      - 8200
+    environment:
+      - VAULT_ADDR=http://127.0.0.1:8200
+      - CONSUL=consul
+      - CONSUL_AGENT=1
+    network_mode: bridge
+    links:
+      - consul:consul
+    command: >-
+      /usr/local/bin/containerpilot
+  
   consul:
-    image: autopilotpattern/consul:${TAG:-latest}
+    image: smithx10/consul:${TAG:-latest}
     command: >
        /usr/local/bin/containerpilot
     restart: always
