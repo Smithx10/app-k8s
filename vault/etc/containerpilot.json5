@@ -33,6 +33,14 @@
       }
     }{{ else }}
     {
+      name: "configureTLS",
+      exec: "/usr/local/bin/vault-manage configureTLS",
+      when: {
+        source: "consul-agent",
+        once: "healthy"
+      }
+    },
+    {
       name: "{{ .SERVICE_NAME | default "vault-node" }}",
       exec: "/usr/local/bin/vault-manage start",
       port: 8200,
